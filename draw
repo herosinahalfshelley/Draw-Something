@@ -1,0 +1,102 @@
+#!/usr/bin/env python
+
+
+"""draw.
+
+Usage:
+  draw halo --source=<file> (--target=<file> | --show) [--verbose]
+  draw mono --source=<file> (--target=<file> | --show) [--verbose]
+  draw --help
+  draw --version
+
+Options:
+  -h --help        Show this screen.
+  --version        Show version.
+  --source=<file>  Path to input image.
+  --target=<file>  Path to output image
+  --show           Render the result to the screen.
+  --verbose        Show verbose output useful for debugging.
+"""
+from docopt import docopt
+import math
+from PIL import Image
+
+
+def main():
+    args = docopt(__doc__, version='draw v0.1.0')
+    verbose = args['--verbose']
+    if verbose:
+        print('args:\n{}'.format(args))
+    if args['halo']:
+        halo(args['--source'], args['--target'], args['--show'], verbose)
+    if args['mono']:
+        mono(args['--source'], args['--target'], args['--show'], verbose)
+
+def halo(source_file, target_file, show, verbose):
+    src = Image.open(source_file)
+    if verbose:
+        print(src.format, src.size, src.mode)
+
+    # convert to a 4-channels, 8 bits per channel per sample
+    out = src.convert('RGBA')
+
+    width, height = src.size
+    center = (width/2, height/2)
+    # max_dist is the distance from the origin (top left corner)
+    # to the center of the image.
+    max_dist = distance((0, 0), center)
+
+    # iterate over all of the points in the image raster and process
+    # the pixel value at each point based on its position.
+    for y in range(0, height):
+        for x in range(0, width):
+            # compute a normalized (between zero and one) distance from the
+            # center point.
+            d = distance(center, (x, y))
+            d_rel = d / max_dist
+            # only process points within a ring around the center point.
+            if d_rel < 0.5 and d_rel > 0.3:
+                # get the pixel value at this point.
+                r, g, b, a = out.getpixel((x, y))
+                # overwrite the pixel value, preserving color information
+                # but at half-opacity.
+                out.putpixel((x, y), (r, g, b, 128))
+
+    if target_file:
+        print('saving result to file [{}]'.format(target_file))
+        out.save(target_file)
+
+    if show:
+        print('rendering result to the display')
+        out.show()
+
+
+# Returns the L2 (euclidean) distance between two points.
+# p1, p2 are 2-tuples of numbers.
+
+
+def mono(source_file, target_file, show, verbose):
+    src = Image.open(source_file)
+    if verbose:
+        print(src.format, src.size, src.mode)
+
+    # convert to lumosity?
+    out = src.convert('L')
+
+    if target_file:
+        print('saving result to file [{}]'.format(target_file))
+        out.save(target_file)
+
+    if show:
+        print('rendering result to the display')
+        out.show()
+
+
+def distance(p1, p2):
+    x1, y1 = p1
+    x2, y2 = p2
+    return math.sqrt(math.pow(x1 - x2, 2) + math.pow(y1 - y2, 2))
+
+
+if __name__ == '__main__':
+    main()
