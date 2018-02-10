@@ -5,6 +5,8 @@
 
 Usage:
   draw halo --source=<file> (--target=<file> | --show) [--verbose]
+  draw mono --source=<file> (--target=<file> | --show) [--verbose]
+  draw negative --source=<file> (--target=<file> | --show) [--verbose]
   draw --help
   draw --version
 
@@ -19,6 +21,7 @@ Options:
 from docopt import docopt
 import math
 from PIL import Image
+import PIL.ImageOps
 
 
 def main():
@@ -28,7 +31,10 @@ def main():
         print('args:\n{}'.format(args))
     if args['halo']:
         halo(args['--source'], args['--target'], args['--show'], verbose)
-
+    if args['mono']:
+        mono(args['--source'], args['--target'], args['--show'], verbose)
+    if args['negative']:
+        negative(args['--source'], args['--target'], args['--show'], verbose)
 
 def halo(source_file, target_file, show, verbose):
     src = Image.open(source_file)
@@ -71,6 +77,42 @@ def halo(source_file, target_file, show, verbose):
 
 # Returns the L2 (euclidean) distance between two points.
 # p1, p2 are 2-tuples of numbers.
+
+
+def mono(source_file, target_file, show, verbose):
+    src = Image.open(source_file)
+    if verbose:
+        print(src.format, src.size, src.mode)
+
+    # convert to lumosity?
+    out = src.convert('L')
+
+    if target_file:
+        print('saving result to file [{}]'.format(target_file))
+        out.save(target_file)
+
+    if show:
+        print('rendering result to the display')
+        out.show()
+
+
+def negative(source_file, target_file, show, verbose):
+    src = Image.open(source_file)
+    if verbose:
+        print(src.format, src.size, src.mode)
+
+    # invert to negative image
+    out = PIL.ImageOps.invert(src)
+
+    if target_file:
+        print('saving result to file [{}]'.format(target_file))
+        out.save(target_file)
+
+    if show:
+        print('rendering result to the display')
+        out.show()
+
+
 def distance(p1, p2):
     x1, y1 = p1
     x2, y2 = p2
